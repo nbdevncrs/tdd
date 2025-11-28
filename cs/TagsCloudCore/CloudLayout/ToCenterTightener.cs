@@ -1,30 +1,38 @@
 using System.Drawing;
+using TagsCloudCore.CloudLayout.Extensions;
 
 namespace TagsCloudCore.CloudLayout;
 
-public class ToCenterTightener
+public static class ToCenterTightener
 {
-    public Rectangle Tighten(
-        Rectangle rect,
+    public static Rectangle Tighten(
+        Rectangle rectangle,
         Point center,
-        IEnumerable<Rectangle> existing,
-        CollisionIdentifier collisionIdentifier)
+        IEnumerable<Rectangle> existing)
     {
-        var current = rect;
+        var existingRectangles = existing.ToList();
+        var current = rectangle;
 
-        while (true)
+        while (IsMovingForwardNeeded(current, center, existingRectangles, out var moved))
         {
-            var moved = MoveOneStepTowardsCenter(current, center);
-
-            if (moved == current ||
-                collisionIdentifier.IntersectsAny(moved, existing) ||
-                GetDistance(moved, center) > GetDistance(current, center))
-            {
-                return current;
-            }
-
             current = moved;
         }
+
+        return current;
+    }
+
+    private static bool IsMovingForwardNeeded(
+        Rectangle current,
+        Point center,
+        List<Rectangle> existing,
+        out Rectangle moved)
+    {
+        moved = MoveOneStepTowardsCenter(current, center);
+        var noMovementDone = moved == current;
+        var wouldIntersect = moved.IntersectsAny(existing);
+        var positionBecomesWorse = GetDistance(moved, center) > GetDistance(current, center);
+        
+        return !(noMovementDone || wouldIntersect || positionBecomesWorse);
     }
 
     private static Rectangle MoveOneStepTowardsCenter(Rectangle r, Point center)

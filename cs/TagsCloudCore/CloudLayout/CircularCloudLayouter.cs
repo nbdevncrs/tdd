@@ -1,15 +1,16 @@
 using System.Drawing;
+using TagsCloudCore.CloudLayout.Extensions;
 
 namespace TagsCloudCore.CloudLayout;
 
-public class CircularCloudLayouter(
-    Point center,
-    CollisionIdentifier collisionIdentifier,
-    ToCenterTightener toCenterTightener,
-    SpiralGenerator spiral)
+public class CircularCloudLayouter(Point center)
 {
     private readonly List<Rectangle> rectangles = [];
     public IEnumerable<Rectangle> PlacedRectangles => rectangles;
+
+    private double spiralRadianAngle;
+    private const double SpiralRadianAngleStep = 0.1;
+    private const double SpiralRadiusStep = 0.5;
 
     public Rectangle PutNextRectangle(Size rectangleSize)
     {
@@ -18,19 +19,28 @@ public class CircularCloudLayouter(
 
         Rectangle currentRectangle;
 
-        while (true)
+        do
         {
-            var nextPossibleLocation = spiral.GetNextSpiralPoint();
+            var upperLeftRectangleCorner = GetNextPossibleRectanglePosition();
+            currentRectangle = new Rectangle(upperLeftRectangleCorner, rectangleSize);
+        } while (currentRectangle.IntersectsAny(rectangles));
 
-            currentRectangle = new Rectangle(nextPossibleLocation, rectangleSize);
-
-            if (!collisionIdentifier.IntersectsAny(currentRectangle, rectangles))
-                break;
-        }
-
-        currentRectangle = toCenterTightener.Tighten(currentRectangle, center, rectangles, collisionIdentifier);
+        currentRectangle = ToCenterTightener.Tighten(currentRectangle, center, rectangles);
 
         rectangles.Add(currentRectangle);
         return currentRectangle;
+    }
+
+    private Point GetNextPossibleRectanglePosition()
+    {
+        var radius = SpiralRadiusStep * spiralRadianAngle;
+
+        var point = new Point(
+            center.X + (int)(radius * Math.Cos(spiralRadianAngle)),
+            center.Y + (int)(radius * Math.Sin(spiralRadianAngle)));
+
+        spiralRadianAngle += SpiralRadianAngleStep;
+
+        return point;
     }
 }
