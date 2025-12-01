@@ -1,6 +1,7 @@
 using System.Drawing;
 using FluentAssertions;
 using TagsCloudCore.CloudLayout;
+using TagsCloudCore.CloudLayout.Extensions;
 
 namespace TagsCloudTests;
 
@@ -28,30 +29,27 @@ public class CircularCloudLayouterTests
     {
         var center = new Point(500, 500);
         var layouter = new CircularCloudLayouter(center);
+        var sizes = GenerateRandomSizes(80, 10, 60, 10, 40);
 
-        const int rectanglesCount = 80;
+        var rectangles = new List<Rectangle>();
 
-        var random = new Random();
-
-        var sizes = Enumerable.Range(0, rectanglesCount)
-            .Select(_ => new Size(
-                random.Next(10, 60),
-                random.Next(10, 40)))
-            .ToList();
-
-        var placedRectangles = sizes
-            .Select(s => layouter.PutNextRectangle(s))
-            .ToList();
+        foreach (var size in sizes)
+        {
+            var rect = layouter.PutNextRectangle(size);
+            rectangles.Add(rect);
+        }
 
         var hasOverlap = false;
 
-        for (var i = 0; i < placedRectangles.Count; i++)
+        for (var i = 0; i < rectangles.Count; i++)
         {
-            for (var j = i + 1; j < placedRectangles.Count; j++)
+            for (var j = i + 1; j < rectangles.Count; j++)
             {
-                if (!placedRectangles[i].IntersectsWith(placedRectangles[j])) continue;
-                hasOverlap = true;
-                break;
+                if (rectangles[i].IntersectsWith(rectangles[j]))
+                {
+                    hasOverlap = true;
+                    break;
+                }
             }
 
             if (hasOverlap)
@@ -62,13 +60,16 @@ public class CircularCloudLayouterTests
     }
 
 
-    [Test]
-    public void CircularCloudLayouter_ShouldThrow_WhenSizeIsZeroOrNegative_Test()
+    [TestCase(-1, 10)]
+    [TestCase(0, 10)]
+    [TestCase(10, -1)]
+    [TestCase(10, 0)]
+    public void CircularCloudLayouter_ShouldThrow_WhenSizeIsInvalid_Test(int width, int height)
     {
         var center = new Point(100, 100);
         var layouter = new CircularCloudLayouter(center);
 
-        Action act = () => layouter.PutNextRectangle(new Size(0, 10));
+        Action act = () => layouter.PutNextRectangle(new Size(width, height));
 
         act.Should()
             .Throw<ArgumentException>()
@@ -80,35 +81,24 @@ public class CircularCloudLayouterTests
     {
         var center = new Point(500, 500);
         var layouter = new CircularCloudLayouter(center);
+        var sizes = GenerateRandomSizes(200, 10, 40, 10, 30);
 
-        var random = new Random();
-        var sizes = Enumerable.Range(0, 200)
-            .Select(_ => new Size(
-                random.Next(10, 40),
-                random.Next(10, 30)))
-            .ToList();
+        var rectangles = new List<Rectangle>();
 
-        var rectangles = sizes
-            .Select(s => layouter.PutNextRectangle(s))
-            .ToList();
+        foreach (var size in sizes)
+        {
+            var rect = layouter.PutNextRectangle(size);
+            rectangles.Add(rect);
+        }
 
         var totalArea = rectangles.Sum(r => r.Width * r.Height);
 
-        var maxRadius = rectangles.Max(MaxDistanceToCenter);
+        var maxRadius = rectangles.Max(r => r.GetDistanceToPoint(center));
 
         var circleArea = Math.PI * maxRadius * maxRadius;
         var density = totalArea / circleArea;
 
         density.Should().BeGreaterThan(0.20);
-        return;
-
-        double MaxDistanceToCenter(Rectangle r)
-        {
-            var rectangleCenter = new Point(r.Left + r.Width / 2, r.Top + r.Height / 2);
-            var dx = rectangleCenter.X - center.X;
-            var dy = rectangleCenter.Y - center.Y;
-            return Math.Sqrt(dx * dx + dy * dy);
-        }
     }
 
 
@@ -117,33 +107,40 @@ public class CircularCloudLayouterTests
     {
         var center = new Point(500, 500);
         var layouter = new CircularCloudLayouter(center);
+        var sizes = GenerateRandomSizes(150, 10, 50, 10, 35);
 
-        var random = new Random();
-        var sizes = Enumerable.Range(0, 150)
-            .Select(_ => new Size(
-                random.Next(10, 50),
-                random.Next(10, 35)))
-            .ToList();
+        var rectangles = new List<Rectangle>();
 
-        var rectangles = sizes
-            .Select(s => layouter.PutNextRectangle(s))
-            .ToList();
+        foreach (var size in sizes)
+        {
+            var rect = layouter.PutNextRectangle(size);
+            rectangles.Add(rect);
+        }
 
-        var distances = rectangles.Select(Distance).ToArray();
+        var distances = rectangles
+            .Select(r => r.GetDistanceToPoint(center))
+            .ToArray();
 
         var averageDistance = distances.Average();
         var variance = distances.Select(d => Math.Pow(d - averageDistance, 2)).Average();
         var standardDeviation = Math.Sqrt(variance);
 
-        (standardDeviation / averageDistance).Should().BeLessThan(0.45);
-        return;
+        var variationCoefficient = standardDeviation / averageDistance;
+        (variationCoefficient).Should().BeLessThan(0.45);
+    }
 
-        double Distance(Rectangle r)
+    private static List<Size> GenerateRandomSizes(int count, int minWidth, int maxWidth, int minHeight, int maxHeight)
+    {
+        var random = new Random();
+        var sizes = new List<Size>();
+
+        for (var i = 0; i < count; i++)
         {
-            var rc = new Point(r.Left + r.Width / 2, r.Top + r.Height / 2);
-            var dx = rc.X - center.X;
-            var dy = rc.Y - center.Y;
-            return Math.Sqrt(dx * dx + dy * dy);
+            sizes.Add(new Size(
+                random.Next(minWidth, maxWidth),
+                random.Next(minHeight, maxHeight)));
         }
+
+        return sizes;
     }
 }
