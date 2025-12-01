@@ -7,13 +7,13 @@ public static class ToCenterTightener
 {
     public static Rectangle Tighten(
         Rectangle rectangle,
-        Point center,
-        IEnumerable<Rectangle> existing)
+        Point cloudCenter,
+        IEnumerable<Rectangle> existingRectangles)
     {
-        var existingRectangles = existing.ToList();
+        var existingRectanglesList = existingRectangles.ToList();
         var current = rectangle;
 
-        while (IsMovingForwardNeeded(current, center, existingRectangles, out var moved))
+        while (TryMoveForward(current, cloudCenter, existingRectanglesList, out var moved))
         {
             current = moved;
         }
@@ -21,42 +21,34 @@ public static class ToCenterTightener
         return current;
     }
 
-    private static bool IsMovingForwardNeeded(
+    private static bool TryMoveForward(
         Rectangle current,
         Point center,
-        List<Rectangle> existing,
+        List<Rectangle> existingRectangles,
         out Rectangle moved)
     {
         moved = MoveOneStepTowardsCenter(current, center);
-        var noMovementDone = moved == current;
-        var wouldIntersect = moved.IntersectsAny(existing);
-        var positionBecomesWorse = GetDistance(moved, center) > GetDistance(current, center);
-        
-        return !(noMovementDone || wouldIntersect || positionBecomesWorse);
+
+        var isRectangleStationary = moved == current;
+        if (isRectangleStationary) return false;
+
+        var wouldRectanglesIntersect = moved.IntersectsAny(existingRectangles);
+        if (wouldRectanglesIntersect) return false;
+
+        var doesPositionBecomeBetter = moved.GetDistanceToPoint(center) <= current.GetDistanceToPoint(center);
+        return doesPositionBecomeBetter;
     }
 
-    private static Rectangle MoveOneStepTowardsCenter(Rectangle r, Point center)
+    private static Rectangle MoveOneStepTowardsCenter(Rectangle rectangle, Point center)
     {
-        var cx = r.X + r.Width / 2;
-        var cy = r.Y + r.Height / 2;
+        var rectangleCenter = rectangle.Center();
 
-        var dx = Math.Sign(center.X - cx);
-        var dy = Math.Sign(center.Y - cy);
+        var dx = Math.Sign(center.X - rectangleCenter.X);
+        var dy = Math.Sign(center.Y - rectangleCenter.Y);
 
         if (dx == 0 && dy == 0)
-            return r;
+            return rectangle;
 
-        return r with { X = r.X + dx, Y = r.Y + dy };
-    }
-
-    private static double GetDistance(Rectangle r, Point center)
-    {
-        var cx = r.X + r.Width / 2;
-        var cy = r.Y + r.Height / 2;
-
-        var dx = cx - center.X;
-        var dy = cy - center.Y;
-
-        return Math.Sqrt(dx * dx + dy * dy);
+        return rectangle with { X = rectangle.X + dx, Y = rectangle.Y + dy };
     }
 }
