@@ -7,6 +7,7 @@ public class CircularCloudLayouter(Point center)
 {
     private readonly List<Rectangle> rectangles = [];
     public IEnumerable<Rectangle> PlacedRectangles => rectangles;
+    public Point Center { get; } = center;
 
     private double spiralRadianAngle;
     private const double SpiralRadianAngleStep = 0.1;
@@ -25,7 +26,7 @@ public class CircularCloudLayouter(Point center)
             currentRectangle = new Rectangle(upperLeftRectangleCorner, rectangleSize);
         } while (currentRectangle.IntersectsAny(rectangles));
 
-        currentRectangle = ToCenterTightener.Tighten(currentRectangle, center, rectangles);
+        currentRectangle = ToCenterTightener.Tighten(currentRectangle, Center, rectangles);
 
         rectangles.Add(currentRectangle);
         return currentRectangle;
@@ -36,8 +37,8 @@ public class CircularCloudLayouter(Point center)
         var radius = SpiralRadiusStep * spiralRadianAngle;
 
         var point = new Point(
-            center.X + (int)(radius * Math.Cos(spiralRadianAngle)),
-            center.Y + (int)(radius * Math.Sin(spiralRadianAngle)));
+            Center.X + (int)(radius * Math.Cos(spiralRadianAngle)),
+            Center.Y + (int)(radius * Math.Sin(spiralRadianAngle)));
 
         spiralRadianAngle += SpiralRadianAngleStep;
 
