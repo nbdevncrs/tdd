@@ -12,6 +12,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagsCloudTests", "TagsCloudTests\TagsCloudTests.csproj", "{50F1D5F6-5CE8-4D58-BAC9-33B01D15BBBC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TagsCloud", "TagsCloud", "{81506BFD-E2DE-4B26-97CB-D9CDE0D2F5DC}"
+	ProjectSection(SolutionItems) = preProject
+		TagsCloud\README.md = TagsCloud\README.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagsCloudRunner", "TagsCloud\TagsCloudRunner\TagsCloudRunner.csproj", "{3BA74257-40CA-4947-A29B-65E46D64C6C4}"
 EndProject
