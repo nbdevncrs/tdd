@@ -3,6 +3,7 @@ using FluentAssertions;
 using TagsCloudCore.CloudLayout;
 using TagsCloudCore.CloudLayout.Extensions;
 using TagsCloudCore.CloudVisualization;
+using TagsCloudRunner;
 
 namespace TagsCloudTests;
 
@@ -52,7 +53,7 @@ public class CircularCloudLayouterTests
     [Test]
     public void CircularCloudLayouter_ShouldNotProduceOverlappingRectangles_WhenPlacingMany_Test()
     {
-        var sizes = GenerateRandomSizes(80, 10, 60, 10, 40);
+        var sizes = SizesGenerator.GenerateRandomSizes(80, 10, 60, 10, 40);
 
         var rectangles = new List<Rectangle>();
 
@@ -99,7 +100,7 @@ public class CircularCloudLayouterTests
     [Test]
     public void CircularCloudLayouter_ShouldReturnReasonablyCompactCloud_Test()
     {
-        var sizes = GenerateRandomSizes(200, 10, 40, 10, 30);
+        var sizes = SizesGenerator.GenerateRandomSizes(200, 10, 40, 10, 30);
 
         var rectangles = new List<Rectangle>();
 
@@ -123,7 +124,7 @@ public class CircularCloudLayouterTests
     [Test]
     public void CircularCloudLayouter_ShouldFormRoughCircularShape_Test()
     {
-        var sizes = GenerateRandomSizes(150, 10, 50, 10, 35);
+        var sizes = SizesGenerator.GenerateRandomSizes(150, 10, 50, 10, 35);
 
         var rectangles = new List<Rectangle>();
 
@@ -143,20 +144,5 @@ public class CircularCloudLayouterTests
 
         var variationCoefficient = standardDeviation / averageDistance;
         (variationCoefficient).Should().BeLessThan(0.45);
-    }
-
-    private static List<Size> GenerateRandomSizes(int count, int minWidth, int maxWidth, int minHeight, int maxHeight)
-    {
-        var random = new Random();
-        var sizes = new List<Size>();
-
-        for (var i = 0; i < count; i++)
-        {
-            sizes.Add(new Size(
-                random.Next(minWidth, maxWidth),
-                random.Next(minHeight, maxHeight)));
-        }
-
-        return sizes;
     }
 }
