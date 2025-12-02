@@ -2,17 +2,42 @@ using System.Drawing;
 using FluentAssertions;
 using TagsCloudCore.CloudLayout;
 using TagsCloudCore.CloudLayout.Extensions;
+using TagsCloudCore.CloudVisualization;
 
 namespace TagsCloudTests;
 
 public class CircularCloudLayouterTests
 {
+    private CircularCloudLayouter layouter;
+
+    [SetUp]
+    public void Setup()
+    {
+        layouter = new CircularCloudLayouter(new Point(0, 0));
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        var result = TestContext.CurrentContext.Result.Outcome.Status;
+
+        if (result != NUnit.Framework.Interfaces.TestStatus.Failed) return;
+        var filePath = $"{TestContext.CurrentContext.Test.Name}_failed.png";
+
+        try
+        {
+            CloudVisualizer.SaveLayoutToFile(filePath, layouter.PlacedRectangles.ToArray());
+            TestContext.WriteLine($"Tag cloud visualization saved to file {filePath}");
+        }
+        catch (Exception e)
+        {
+            TestContext.WriteLine($"Failed to save tag cloud visualization: {e.Message}");
+        }
+    }
+
     [Test]
     public void CircularCloudLayouter_ShouldPlaceFirstRectangleCenterExactlyAtCloudCenter_Test()
     {
-        var center = new Point(200, 200);
-        var layouter = new CircularCloudLayouter(center);
-
         var size = new Size(40, 20);
 
         var rectangle = layouter.PutNextRectangle(size);
@@ -21,14 +46,12 @@ public class CircularCloudLayouterTests
             rectangle.X + rectangle.Width / 2,
             rectangle.Y + rectangle.Height / 2);
 
-        rectangleCenter.Should().Be(center);
+        rectangleCenter.Should().Be(layouter.Center);
     }
 
     [Test]
     public void CircularCloudLayouter_ShouldNotProduceOverlappingRectangles_WhenPlacingMany_Test()
     {
-        var center = new Point(500, 500);
-        var layouter = new CircularCloudLayouter(center);
         var sizes = GenerateRandomSizes(80, 10, 60, 10, 40);
 
         var rectangles = new List<Rectangle>();
@@ -66,9 +89,6 @@ public class CircularCloudLayouterTests
     [TestCase(10, 0)]
     public void CircularCloudLayouter_ShouldThrow_WhenSizeIsInvalid_Test(int width, int height)
     {
-        var center = new Point(100, 100);
-        var layouter = new CircularCloudLayouter(center);
-
         Action act = () => layouter.PutNextRectangle(new Size(width, height));
 
         act.Should()
@@ -79,8 +99,6 @@ public class CircularCloudLayouterTests
     [Test]
     public void CircularCloudLayouter_ShouldReturnReasonablyCompactCloud_Test()
     {
-        var center = new Point(500, 500);
-        var layouter = new CircularCloudLayouter(center);
         var sizes = GenerateRandomSizes(200, 10, 40, 10, 30);
 
         var rectangles = new List<Rectangle>();
@@ -93,7 +111,7 @@ public class CircularCloudLayouterTests
 
         var totalArea = rectangles.Sum(r => r.Width * r.Height);
 
-        var maxRadius = rectangles.Max(r => r.GetDistanceToPoint(center));
+        var maxRadius = rectangles.Max(r => r.GetDistanceToPoint(layouter.Center));
 
         var circleArea = Math.PI * maxRadius * maxRadius;
         var density = totalArea / circleArea;
@@ -105,8 +123,6 @@ public class CircularCloudLayouterTests
     [Test]
     public void CircularCloudLayouter_ShouldFormRoughCircularShape_Test()
     {
-        var center = new Point(500, 500);
-        var layouter = new CircularCloudLayouter(center);
         var sizes = GenerateRandomSizes(150, 10, 50, 10, 35);
 
         var rectangles = new List<Rectangle>();
@@ -118,7 +134,7 @@ public class CircularCloudLayouterTests
         }
 
         var distances = rectangles
-            .Select(r => r.GetDistanceToPoint(center))
+            .Select(r => r.GetDistanceToPoint(layouter.Center))
             .ToArray();
 
         var averageDistance = distances.Average();
