@@ -9,36 +9,33 @@ internal static class Program
     public static void Main()
     {
         GenerateTagsCloud(
-            filePath: "cloud_small.png",
+            fileName: "cloud_small.png",
             center: new Point(0, 0),
-            rectanglesCount: 75);
+            rectanglesCount: 150);
 
         GenerateTagsCloud(
-            filePath: "cloud_medium.png",
+            fileName: "cloud_medium.png",
             center: new Point(0, 0),
-            rectanglesCount: 250);
+            rectanglesCount: 750);
 
         GenerateTagsCloud(
-            filePath: "cloud_big.png",
+            fileName: "cloud_big.png",
             center: new Point(0, 0),
-            rectanglesCount: 450);
+            rectanglesCount: 1500);
     }
 
-    private static void GenerateTagsCloud(string filePath, Point center, int rectanglesCount)
+    private static void GenerateTagsCloud(string fileName, Point center, int rectanglesCount)
     {
         var layouter = new CircularCloudLayouter(center);
 
-        var random = new Random();
+        var sizes = SizesGenerator.GenerateRandomSizes(rectanglesCount, 20, 100, 15, 40);
 
-        for (var i = 0; i < rectanglesCount; i++)
+        foreach (var size in sizes)
         {
-            var size = new Size(
-                random.Next(20, 100),
-                random.Next(15, 40));
-
             layouter.PutNextRectangle(size);
         }
 
+        var filePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Images", fileName);
         CloudVisualizer.SaveLayoutToFile(filePath, layouter.PlacedRectangles.ToArray());
     }
 }
